@@ -18,6 +18,8 @@ is done in software:
 - `chatter-filter.service` is the systemd unit, for installing by hand if the installer fails.
 - `KeyboardChatterFilter.exe`, `.cs`, `chatter-filter.ps1`, `install.cmd`, `uninstall.cmd`
   and `install.ps1` are the Windows version. Ignore them on Linux.
+- `chatter-filter-macos.swift` and `install-macos.sh` are the macOS version; see
+  [macOS](#macos) at the end.
 
 **Quick path:** a person who doesn't want the guided test can just run
 `sudo bash install-linux.sh` and is done. The steps below do the same thing, with a
@@ -191,3 +193,33 @@ sudo bash install-linux.sh --uninstall
 --log FILE       also append dropped presses to FILE
 --list           list input devices with their IDs and exit
 ```
+
+## macOS
+
+`chatter-filter-macos.swift` uses a Quartz event tap: it sees every key event before
+apps do and drops chatter presses with the same rule and options as the Linux script.
+An event tap can't tell keyboards apart, so every keyboard is filtered (as on Windows);
+a 40 ms window never catches human typing. Modifier keys aren't filtered, and macOS
+hides keys typed into password fields (Secure Input) from it.
+
+Install, as your user (not `sudo`); it needs `swiftc` from Xcode or the command line tools:
+
+```bash
+./install-macos.sh --threshold 40
+```
+
+It builds `~/.local/bin/chatter-filter-macos`, writes the LaunchAgent
+`~/Library/LaunchAgents/com.chatter-filter.plist`, and starts it now and at every login.
+The first time, the human must turn on **chatter-filter-macos** in System Settings >
+Privacy & Security > Accessibility; until then the filter logs `waiting for
+Accessibility permission` and lets keys through. A rebuilt binary has to be allowed
+again, so the installer only replaces it when the source changed.
+
+Test and tune as in steps 4 and 5: ask the human to type, watch
+`tail -f ~/Library/Logs/chatter-filter.log` for `dropped` lines, and re-run the
+installer with another `--threshold` or `--keys E,L` until they're happy.
+
+Uninstall with `./install-macos.sh --uninstall`, then remove the Accessibility entry.
+
+Filter options: `--threshold MS`, `--keys E,L,...` (Linux key names such as `SPACE`,
+`ENTER`, `BACKSPACE`), `--seconds N` (stop after N seconds), `--log FILE`.
