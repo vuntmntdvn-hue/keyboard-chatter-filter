@@ -1,0 +1,10 @@
+[Unit]
+Description=Keyboard chatter filter (per-key debounce)
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/chatter-filter-linux.py --threshold 40
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
